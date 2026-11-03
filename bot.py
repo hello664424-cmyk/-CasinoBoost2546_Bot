@@ -1,20 +1,6 @@
 import os
 import random
 import logging
-from telebot import TeleBot, types
-
-# Setup logger
-logging.basicConfig(level=logging.INFO)
-
-# Load Token from Environment Variables
-TOKEN = os.environ.get("BOT_TOKEN")
-if not TOKEN:
-    raise ValueError("ERROR: BOT_TOKEN environment variable is not set!")
-
-bot = TeleBot(TOKEN)
-
-# In-memory storage for user balances (use a database like PostgreSQL/Redis for production)
-user_balances = {}
 
 def get_balance(user_id):
     if user_id not in user_balances:
