@@ -8,9 +8,7 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
-    ChatMemberHandler,
 )
-from telegram.enums import ChatMemberStatus, ParseMode
 
 # Configure Logging
 logging.basicConfig(
@@ -21,10 +19,8 @@ logger = logging.getLogger(__name__)
 
 # Configuration parameters via Environment Variables
 TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
-REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername")  # e.g., @MyAwesomeChannel
+REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername")
 
-# In-memory database storing user balance and stats
-# Format: { user_id: {"balance": 1000, "daily_claimed": False} }
 users_db: Dict[int, Dict[str, Any]] = {}
 
 def get_user_data(user_id: int) -> Dict[str, Any]:
@@ -33,16 +29,12 @@ def get_user_data(user_id: int) -> Dict[str, Any]:
     return users_db[user_id]
 
 async def is_user_subscribed(bot, user_id: int) -> bool:
-    """Check if the user is subscribed to the required channel for boost verification."""
     if not REQUIRED_CHANNEL or REQUIRED_CHANNEL == "@YourChannelUsername":
         return True
     try:
         member = await bot.get_chat_member(chat_id=REQUIRED_CHANNEL, user_id=user_id)
-        return member.status in [
-            ChatMemberStatus.MEMBER,
-            ChatMemberStatus.ADMINISTRATOR,
-            ChatMemberStatus.OWNER,
-        ]
+        # Compatible string check for member status across versions
+        return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         logger.error(f"Subscription check error: {e}")
         return True
