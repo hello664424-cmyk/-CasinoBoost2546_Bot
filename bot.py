@@ -2,6 +2,13 @@ import os
 import logging
 import asyncio
 from typing import Dict, Any
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Dice
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
 
 # Configure Logging
 logging.basicConfig(
