@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
 REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername")
 
+# In-memory database storing user balance and stats
 users_db: Dict[int, Dict[str, Any]] = {}
 
 def get_user_data(user_id: int) -> Dict[str, Any]:
@@ -29,11 +30,11 @@ def get_user_data(user_id: int) -> Dict[str, Any]:
     return users_db[user_id]
 
 async def is_user_subscribed(bot, user_id: int) -> bool:
+    """Check if the user is subscribed to the required channel for boost verification."""
     if not REQUIRED_CHANNEL or REQUIRED_CHANNEL == "@YourChannelUsername":
         return True
     try:
         member = await bot.get_chat_member(chat_id=REQUIRED_CHANNEL, user_id=user_id)
-        # Compatible string check for member status across versions
         return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         logger.error(f"Subscription check error: {e}")
@@ -63,7 +64,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     get_user_data(user.id)
     
     text = (
-        f"👋 Welcome to the **Casino & Mini-Game Bot**, {user.mention_markdown_v2()}!\n\n"
+        f"👋 Welcome to the **Casino & Mini-Game Bot**, {user.first_name}!\n\n"
         f"🎮 Play games, earn points, and climb the leaderboard!\n"
         f"📢 *Subscribe to our channel {REQUIRED_CHANNEL} to unlock games and bonus rewards!*"
     )
@@ -71,7 +72,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(
         text, 
         reply_markup=main_keyboard(), 
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode="Markdown"
     )
 
 async def check_sub_gate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
@@ -90,7 +91,7 @@ async def check_sub_gate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             [InlineKeyboardButton("📢 Join Channel Now", url=f"https://t.me/{REQUIRED_CHANNEL.replace('@', '')}")],
             [InlineKeyboardButton("✅ I Have Joined", callback_data="check_sub_again")]
         ])
-        await query.message.reply_text(sub_msg, reply_markup=kbd, parse_mode=ParseMode.MARKDOWN)
+        await query.message.reply_text(sub_msg, reply_markup=kbd, parse_mode="Markdown")
         return False
     return True
 
@@ -119,7 +120,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if data == "check_balance":
         await query.message.reply_text(
             f"💳 **Your Account Balance:** `{user_data['balance']}` Points",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode="Markdown"
         )
 
     elif data == "daily_bonus":
@@ -128,7 +129,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         else:
             user_data["balance"] += 500
             user_data["daily_claimed"] = True
-            await query.message.reply_text("🎁 You claimed your daily bonus of **+500 Points**!", parse_mode=ParseMode.MARKDOWN)
+            await query.message.reply_text("🎁 You claimed your daily bonus of **+500 Points**!", parse_mode="Markdown")
 
     elif data == "play_slots":
         if user_data["balance"] < bet_amount:
@@ -155,7 +156,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         await query.message.reply_text(
             f"{result}\n💰 Balance: `{user_data['balance']}` Points",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode="Markdown"
         )
 
     elif data == "play_dice":
@@ -177,7 +178,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         await query.message.reply_text(
             f"{result}\n💰 Balance: `{user_data['balance']}` Points",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode="Markdown"
         )
 
     elif data == "play_darts":
@@ -203,7 +204,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         await query.message.reply_text(
             f"{result}\n💰 Balance: `{user_data['balance']}` Points",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode="Markdown"
         )
 
 def main() -> None:
