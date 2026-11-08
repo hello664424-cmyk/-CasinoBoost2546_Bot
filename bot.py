@@ -16,12 +16,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration settings via environment variables
+# Configuration settings via environment variables (stripped of hidden spaces)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-
-if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN environment variable is missing or empty!")
-REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername")  # E.g. @mychannel
+REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername").strip()
 INITIAL_BALANCE = 100
 DAILY_BONUS = 50
 
