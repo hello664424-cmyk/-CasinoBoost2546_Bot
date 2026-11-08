@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
 REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL", "@YourChannelUsername")
 
-# In-memory database storing user balance and stats
+# In-memory database storing user score and stats
 users_db: Dict[int, Dict[str, Any]] = {}
 
 def get_user_data(user_id: int) -> Dict[str, Any]:
@@ -30,7 +30,7 @@ def get_user_data(user_id: int) -> Dict[str, Any]:
     return users_db[user_id]
 
 async def is_user_subscribed(bot, user_id: int) -> bool:
-    """Check if the user is subscribed to the required channel for boost verification."""
+    """Check if the user is subscribed to the required channel."""
     if not REQUIRED_CHANNEL or REQUIRED_CHANNEL == "@YourChannelUsername":
         return True
     try:
@@ -41,15 +41,15 @@ async def is_user_subscribed(bot, user_id: int) -> bool:
         return True
 
 def main_keyboard() -> InlineKeyboardMarkup:
-    """Returns the primary menu keyboard."""
+    """Returns the primary arcade menu keyboard."""
     keyboard = [
         [
-            InlineKeyboardButton("🎰 Spin Slots (100 pts)", callback_data="play_slots"),
+            InlineKeyboardButton("🕹️ Spin Wheel (100 pts)", callback_data="play_slots"),
             InlineKeyboardButton("🎲 Roll Dice (100 pts)", callback_data="play_dice"),
         ],
         [
             InlineKeyboardButton("🎯 Darts (100 pts)", callback_data="play_darts"),
-            InlineKeyboardButton("💰 My Balance", callback_data="check_balance"),
+            InlineKeyboardButton("⭐ My Score", callback_data="check_balance"),
         ],
         [
             InlineKeyboardButton("🎁 Daily Bonus (+500 pts)", callback_data="daily_bonus"),
@@ -59,14 +59,14 @@ def main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles /start command and introduces channel subscription incentive."""
+    """Handles /start command and introduces arcade games."""
     user = update.effective_user
     get_user_data(user.id)
     
     text = (
-        f"👋 Welcome to the **Casino & Mini-Game Bot**, {user.first_name}!\n\n"
-        f"🎮 Play games, earn points, and climb the leaderboard!\n"
-        f"📢 *Subscribe to our channel {REQUIRED_CHANNEL} to unlock games and bonus rewards!*"
+        f"👋 Welcome to the **Arcade & Puzzle Mini-Game Bot**, {user.first_name}!\n\n"
+        f"🎮 Play interactive games, earn high scores, and climb the leaderboard!\n"
+        f"📢 *Subscribe to our channel {REQUIRED_CHANNEL} to unlock extra plays and daily bonuses!*"
     )
     
     await update.message.reply_text(
@@ -76,7 +76,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 async def check_sub_gate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """Ensures user is subscribed before allowing casino action."""
+    """Ensures user is subscribed before playing."""
     query = update.callback_query
     user_id = query.from_user.id
     
@@ -84,7 +84,7 @@ async def check_sub_gate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not subscribed:
         sub_msg = (
             f"⚠️ **Access Restricted!**\n\n"
-            f"You must join our official channel to play games and boost your points:\n"
+            f"You must join our official channel to play arcade games and unlock bonus points:\n"
             f"👉 {REQUIRED_CHANNEL}"
         )
         kbd = InlineKeyboardMarkup([
@@ -119,7 +119,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     if data == "check_balance":
         await query.message.reply_text(
-            f"💳 **Your Account Balance:** `{user_data['balance']}` Points",
+            f"⭐ **Your Score / Points:** `{user_data['balance']}`",
             parse_mode="Markdown"
         )
 
@@ -133,35 +133,34 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     elif data == "play_slots":
         if user_data["balance"] < bet_amount:
-            await query.message.reply_text("❌ Insufficient balance to play! Claim your daily bonus.")
+            await query.message.reply_text("❌ Insufficient points! Claim your daily bonus to continue.")
             return
 
         user_data["balance"] -= bet_amount
         msg = await context.bot.send_dice(chat_id=query.message.chat_id, emoji=Dice.SLOT_MACHINE)
         value = msg.dice.value
-        await asyncio.sleep(2.5)  # Pause for animation build-up
+        await asyncio.sleep(2.5)  # Pause for animation
 
-        # Telegram Slots mapping logic:
-        # Values 1, 22, 43, 64 correspond to triple matches (Jackpots)
+        # Arcade scoring logic mapping
         if value in [1, 22, 43, 64]:
             reward = 1000
             user_data["balance"] += reward
-            result = f"🎉 **JACKPOT!** You matched 3 symbols and won `{reward}` Points!"
+            result = f"🎉 **ULTRA COMBO!** You matched 3 symbols and scored `{reward}` Points!"
         elif value in [2, 3, 4, 10, 15, 20, 25, 30, 40, 50, 60]:
             reward = 250
             user_data["balance"] += reward
-            result = f"✨ **MINI WIN!** You won `{reward}` Points!"
+            result = f"✨ **GREAT MATCH!** You scored `{reward}` Points!"
         else:
-            result = "💔 No match this time! Try again."
+            result = "🧩 Close match! Try again."
 
         await query.message.reply_text(
-            f"{result}\n💰 Balance: `{user_data['balance']}` Points",
+            f"{result}\n⭐ Score: `{user_data['balance']}` Points",
             parse_mode="Markdown"
         )
 
     elif data == "play_dice":
         if user_data["balance"] < bet_amount:
-            await query.message.reply_text("❌ Insufficient balance to play!")
+            await query.message.reply_text("❌ Insufficient points!")
             return
 
         user_data["balance"] -= bet_amount
@@ -172,18 +171,18 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if value >= 4:
             reward = bet_amount * 2
             user_data["balance"] += reward
-            result = f"🎲 You rolled a **{value}**! You WIN `{reward}` Points!"
+            result = f"🎲 You rolled a **{value}**! You earned `{reward}` Points!"
         else:
-            result = f"🎲 You rolled a **{value}**! Better luck next time."
+            result = f"🎲 You rolled a **{value}**! Keep trying."
 
         await query.message.reply_text(
-            f"{result}\n💰 Balance: `{user_data['balance']}` Points",
+            f"{result}\n⭐ Score: `{user_data['balance']}` Points",
             parse_mode="Markdown"
         )
 
     elif data == "play_darts":
         if user_data["balance"] < bet_amount:
-            await query.message.reply_text("❌ Insufficient balance to play!")
+            await query.message.reply_text("❌ Insufficient points!")
             return
 
         user_data["balance"] -= bet_amount
@@ -194,16 +193,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if value == 6:  # Bullseye
             reward = 500
             user_data["balance"] += reward
-            result = f"🎯 **BULLSEYE!** You won `{reward}` Points!"
+            result = f"🎯 **BULLSEYE!** Perfect shot! You scored `{reward}` Points!"
         elif value >= 4:
             reward = 150
             user_data["balance"] += reward
-            result = f"🎯 Nice shot! You won `{reward}` Points!"
+            result = f"🎯 Nice shot! You scored `{reward}` Points!"
         else:
-            result = "🎯 Missed the target!"
+            result = "🎯 Almost on target!"
 
         await query.message.reply_text(
-            f"{result}\n💰 Balance: `{user_data['balance']}` Points",
+            f"{result}\n⭐ Score: `{user_data['balance']}` Points",
             parse_mode="Markdown"
         )
 
@@ -214,7 +213,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CallbackQueryHandler(handle_callback))
 
-    logger.info("Bot starting...")
+    logger.info("Arcade Bot starting...")
     application.run_polling()
 
 if __name__ == "__main__":
